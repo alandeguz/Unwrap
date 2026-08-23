@@ -8,31 +8,20 @@
 //  $Id: //depot/Unwrap/Tests/UnwrapTests/UnwrapTests.swift#4 $
 //
 
-import XCTest
-import Unwrap
 import Foundation
+import Testing
+import Unwrap
 
-final class UnwrapTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        var empty: String? = "value"
-        XCTAssertEqual(forceUnwrap(empty, "Should never be empty"), "value")
-        do {
-            _ = try unwrap(empty, "Should be empty")
-        } catch {
-            XCTFail("Should not have thrown")
-        }
-        empty = nil
-        URLSession.shared.dataTask(with: URL(string: "https://google.com")!) {
-            (data: Data?, response: URLResponse?, error: Error?) in
-            do {
-                let data = try data !! error
-            } catch {
-                print(error)
-            }
-        }.resume()
+struct UnwrapTests {
+    @Test
+    func `Unwraps optional values`() throws {
+        let value: String? = "value"
+        #expect(forceUnwrap(value, "Should never be empty") == "value")
+        #expect(try unwrap(value, "Should not be empty") == "value")
+
+        let data: Data? = Data("value".utf8)
+        let error: Error? = nil
+        #expect(try data !! error == data)
 
         #if true
         func showUserHelpfulErrorMessageAndQuit() {
@@ -48,32 +37,15 @@ final class UnwrapTests: XCTestCase {
             _ = try URL(string: "https://google.com").unwrapped(orThrow: { throw NSError(domain: "WTF", code: -2, userInfo: nil) })
             _ = try URL(string: "https://google.com").unwrapped(orThrow: "WTF?")
             _ = try URL(string: "https://google.com").unwrapped(orThrow:  showUserHelpfulErrorMessageAndQuit())
-        } catch {
-
-        }
+        } catch {}
         #endif
 
-//        return
-        do {
-            print(try empty !! "WTF")
-            print(try empty ?? unwrapFailure(throw: "WTF"))
-        } catch {
-            print(error)
-        }
-        XCTAssertEqual(empty.unwrap(or: "OK"), "OK")
-        do {
-            _ = try unwrap(empty, "Should be empty")
-        } catch {
-            XCTAssert(true, "Should have thrown")
-        }
+        let empty: String? = nil
+        #expect(empty.unwrap(or: "OK") == "OK")
         #if false // These would be fatal
         _ = URL(static: "##", "URL test")
         _ = NSRegularExpression(static: "(", "Regex test")
-        XCTFail("Should have trapped")
+        Issue.record("Should have trapped")
         #endif
     }
-
-    static var allTests = [
-        ("testExample", testExample),
-    ]
 }

@@ -2,7 +2,9 @@
 //  Unwrap.swift
 //  Unwrap
 //
-//  Created by John Holdsworth on 31/12/2020.
+//  Modified by Alan DeGuzman on 2026/08/22.
+//  Copyright © 2026 Alan DeGuzman.
+//  Created by John Holdsworth on 2020/12/31.
 //  Copyright © 2020 John Holdsworth.
 //
 //  Experimental alternatives to force unwrapping in code.
@@ -30,9 +32,7 @@ public func unwrapFailure<E,T>(throw toThrow: E,
     if let throwingClosure = toThrow as? () throws -> Void {
         try throwingClosure()
     }
-    let toThrow = toThrow as? Error ?? Optional<T>.UnwrapError
-        .forceUnwrapFailed(text: "\(toThrow)", type: Optional<T>.self,
-            file: file, line: line)
+    let toThrow = toThrow as? Error ?? UnwrapError(type: T.self, reasoning: "\(toThrow)", file: file, line: line)
     #if DEBUG
     // Fail quickly during development.
     fatalError("\(toThrow)", file: file, line: line)
@@ -44,11 +44,6 @@ public func unwrapFailure<E,T>(throw toThrow: E,
     #endif
 }
 extension Optional {
-    /// An Error thrown if you don't provide one.
-    public enum UnwrapError: Error {
-        case forceUnwrapFailed(text: String, type: Any.Type,
-            file: StaticString, line: UInt)
-    }
     /// Optional "Unwrap or throw" operator if you prefer.
     /// Always fails quickly during debugging for exceptional
     /// conditions but throws in a "Release" build motivating
@@ -134,13 +129,10 @@ extension Optional {
         file: StaticString = #file, line: UInt = #line) throws -> Wrapped {
         switch self {
         case .none:
-            let error = NSError(domain: "Force Unwrap", code: -1, userInfo: [
-                NSLocalizedDescriptionKey:
-                "Forced unwrap of type \(Wrapped?.self) asserting '\(reasoning)' failed",
-                "file": file, "line": line])
+            let error = UnwrapError(type: Wrapped.self, reasoning: reasoning, file: file, line: line)
             #if DEBUG
             // For a Debug build this is a fatal error for investigation.
-            fatalError("\(error)", file: file, line: line)
+            fatalError(error.description, file: file, line: line)
             #else
             // Otherwise, in production throw so app can recover.
             throw error
